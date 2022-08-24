@@ -20,6 +20,6 @@ app.use(userRouter);
 app.use(postRouter);
 app.use(commentRouter)
 
-app.listen(process.env.PORT, () => {
+app.listen(process.env.PORT || 3000, () => {
   console.log(`Server is up on port ${process.env.PORT}`);
 });

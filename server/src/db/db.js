@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const multer = require("multer");
 const { GridFsStorage } = require("multer-gridfs-storage");
+require("dotenv").config();
 
-mongoose.connect("mongodb://127.0.0.1:27017/blog", { useNewUrlParser: true });
+mongoose.connect(process.env.MONGODBURL, { useNewUrlParser: true });

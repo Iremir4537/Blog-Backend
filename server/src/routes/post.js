@@ -1,19 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const Post = require("../models/post")
-const ObjectId = require("mongodb").ObjectId
 const User = require("../models/user");
 const getUser = require("../middleware/getUser");
 const {uploadImage,downloadImage} = require("../middleware/image")
 const { Error } = require("mongoose");
-const user = require("../models/user");
-
 
 router.post("/api/post/post",[getUser,uploadImage] ,async (req,res) => {
     if(req.body.title == undefined && req.body.postHtml == undefined){
         res.status(201).json({
-            message:"Please fill necessary parts"
-        })
+          message: "Please fill necessary parts",
+          error: true,
+        });
         return
     }
     try {
@@ -27,11 +25,13 @@ router.post("/api/post/post",[getUser,uploadImage] ,async (req,res) => {
         })
         await post.save();
         res.status(201).json({
-            message:"Post has been created"
-        })
+          message: "Post has been created",
+          error: false,
+        });
     } catch (e) {
         res.status(500).json({
           message: "Something went wrong please try again",
+          error: true,
         });
         return;
     }
@@ -40,10 +40,11 @@ router.post("/api/post/post",[getUser,uploadImage] ,async (req,res) => {
 router.get("/api/post/getall", async (req,res) => {
     try {
         const posts = await Post.find({})
-        res.status(200).json({posts})
+        res.status(200).json({ posts, error: false});
     } catch (e) {
         res.status(500).json({
           message: "Something went wrong please try again",
+          error: true,
         });
         return;
     }
@@ -54,20 +55,23 @@ router.get("/api/post/getone/:id", async (req,res) => {
         if(req.params.id.length != 24 ){
             res.status(400).json({
               message: "The post you looking for is no longer exists",
+              error: true,
             });
             return
         }
         const post = await Post.findById(req.params.id);
         if(post == null){
             res.status(400).json({
-                message:"The post you looking for is no longer exists"
-            })
+              message: "The post you looking for is no longer exists",
+              error: true,
+            });
             return
         }
-        res.status(200).json(post)
+        res.status(200).json({ post, error: false });
     } catch (e) {
         res.status(500).json({
           message: "Something went wrong please try again",
+          error: true,
         });
         return;
     }
@@ -75,19 +79,18 @@ router.get("/api/post/getone/:id", async (req,res) => {
 
 router.get("/api/post/myposts", getUser,async (req,res) => {
     try {
-        
         const myPosts = await Post.find({ postedBy:  req.user._id});
-        res.send(myPosts)
+        res.json({ myPosts, error: false});
     } catch (e) {
          res.status(500).json({
            message: "Something went wrong please try again",
+           error: true,
          });
          return;
     }
 })
 
 router.put("/api/post/updatepost/:id", getUser, async (req,res) => {
-
 try {
     const post = await Post.findById(req.params.id);
     if(post.postedBy.toString() == req.user._id.toString()){
@@ -96,7 +99,7 @@ try {
                 throw new Error();
             }
             else{
-                res.send(result)
+                res.json({ result, error: false });
             }
         })
     }
@@ -106,6 +109,7 @@ try {
 } catch (e) {
     res.status(500).json({
       message: "Something went wrong please try again",
+      error: true,
     });
     return;
 }
@@ -117,13 +121,14 @@ router.delete("/api/post/deletepost/:id", getUser, async (req,res) => {
         const post = await Post.findById(req.params.id);
        if (post.postedBy.toString() == req.user._id.toString()) {
          await Post.findByIdAndDelete(post._id);
-         res.send("Deleted");
+         res.json({ message: "Deleted", error: false });
        } else {
          throw new Error();
        }
     } catch (e) {
         res.status(500).json({
           message: "Something went wrong please try again",
+          error: true,
         });
         return;
     }
@@ -132,17 +137,29 @@ router.delete("/api/post/deletepost/:id", getUser, async (req,res) => {
 router.get("/api/post/getcomments/:id", async(req,res) => {
     try {
         const post =await Post.findById(req.params.id);
+        if(post == null){
+            res.json({
+                message:"Post doesn't exists",
+                error:true,
+            })
+            return
+        }
         await post.populate("comments");
-        res.send(post.comments);
+        res.json({comments:post.comments,error:false});
     } catch (e) {
+        console.log(e);
         res.status(500).json({
           message: "Something went wrong please try again",
+          error: true,
         });
         return;
     }
 })
 
 router.put("/api/post/like/:id", getUser, async (req,res) => {
+
+    // If the post is already liked it deletes it
+
     try {
         let userLikes = req.user.likes;
         const post = await Post.findById(req.params.id);
@@ -157,8 +174,9 @@ router.put("/api/post/like/:id", getUser, async (req,res) => {
                 }
             }
            res.status(200).json({
-            message:"Like has been deleted"
-           })
+             message: "Like has been deleted",
+             error: false,
+           });
         }
         else{
             post.likeCount =post.likeCount + 1; 
@@ -166,12 +184,14 @@ router.put("/api/post/like/:id", getUser, async (req,res) => {
             await User.findByIdAndUpdate(req.user._id,{$push: {likes: {postId:req.params.id}}})
             res.status(200).json({
               message: "Post has been liked",
+              error: false,
             });
         }
         
     } catch (e) {
          res.status(500).json({
            message: "Something went wrong please try again",
+           error: true,
          });
          return;
     }

@@ -1,27 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const { initializeApp } = require("firebase/app");
-const {
-  getStorage,
-  uploadBytes,
-  ref,
-  getDownloadURL,
-} = require("firebase/storage");
 const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const crypto = require("crypto");
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDn7FElsSPg-ikrqsasLZQdSjJNOKz8OeQ",
-  authDomain: "blog-cf723.firebaseapp.com",
-  projectId: "blog-cf723",
-  storageBucket: "blog-cf723.appspot.com",
-  messagingSenderId: "353118927100",
-  appId: "1:353118927100:web:066b59491674f5da22bf79",
-};
-
-const Firebaseapp = initializeApp(firebaseConfig);
-const storage = getStorage();
-const storageRef = ref(storage);
+const {
+  storage,
+  uploadBytes,
+  ref,
+  getDownloadURL,
+} = require("../../firebase.config");
 
 const uploadImage = async (req,res,next) => {
 
@@ -57,6 +44,7 @@ const uploadImage = async (req,res,next) => {
         req.imgUrl = ImgURL;
         next();
     } catch (e) {
+      console.log(e);
         res.send("Something went wrong");
     }
 

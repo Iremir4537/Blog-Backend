@@ -3,11 +3,9 @@ const router = express.Router();
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const user = require("../models/user");
 const validator = require("validator");
 
 require("dotenv").config();
-
 
 router.post("/api/user/create", async (req, res) => {
   if (
@@ -96,10 +94,12 @@ router.post("/api/user/create", async (req, res) => {
         await user.save();
         res.status(201).json({
           message: "Account is registered",
+          error: false,
         });
       } catch (e) {
         res.status(500).json({
           message: "Something went wrong please try again",
+          error: true,
         });
         return;
       }
@@ -107,6 +107,7 @@ router.post("/api/user/create", async (req, res) => {
   } catch (e) {
     res.status(500).json({
       message: "Something went wrong please try again",
+      error: true,
     });
     return;
   }
@@ -117,8 +118,9 @@ router.post("/api/user/login", async (req,res) => {
        const  user = await User.findOne({email:req.body.email})
         if(user == null){
             res.status(400).json({
-              message:"Email doesn't exist"
-            })
+              message: "Email doesn't exist",
+              error: true,
+            });
             return
         }
         bcrypt.compare(req.body.password,user.password, function(err,result) {
@@ -126,20 +128,24 @@ router.post("/api/user/login", async (req,res) => {
                 if(!result == true){
                     res.status(400).json({
                       message: "Password is incorrect",
+                      error: true,
                     });
                     return
                 }
                 else{
                    const token = jwt.sign({name:user.name,email:user.email}, process.env.TOKENKEY);
+                   res.cookie("SESSION", token, { expiresIn: "24h" });
                     res.status(200).json({
-                      message:"Login is succesfull",
-                      token
-                    })
+                      message: "Login is succesfull",
+                      token,
+                      error: false,
+                    });
                     return
                 }
            } catch (e) {
               res.status(500).json({
                 message: "Something went wrong please try again",
+                error: true,
               });
               return;
            }
@@ -147,6 +153,7 @@ router.post("/api/user/login", async (req,res) => {
     } catch (e) {
       res.status(500).json({
         message: "Something went wrong please try again",
+        error: true,
       });
       return;
     }
@@ -156,11 +163,13 @@ router.post("/api/user/logout", async (req,res) => {
   try {
     res.clearCookie("SESSION");
     res.status(200).json({
-      message:"Successfully logged out"
+      message: "Successfully logged out",
+      error: false,
     });
   } catch (e) {
     res.status(500).json({
       message: "Something went wrong please try again",
+      error: true,
     });
     return;
   }
@@ -172,11 +181,13 @@ router.get("/api/user/getposts/:id", async (req,res) => {
     const user = await User.findById(req.params.id);
     await user.populate("posts");
     res.status(200).json({
-      posts:user.posts
+      posts: user.posts,
+      error: false,
     });
   } catch (e) {
     res.status(500).json({
       message: "Something went wrong please try again",
+      error: true,
     });
     return;
   }
@@ -204,12 +215,13 @@ router.get("/api/user/info/:token", async (req,res) => {
   } catch (e) {
     if(e.message == "jwt malformed"){
       res.json({
-        message:"Wronk token",
+        message:"Wrong token",
         error:true,
       })
     }else{
       res.status(500).json({
         message: "Something went wrong please try again",
+        error: true,
       });
       return;
     }
