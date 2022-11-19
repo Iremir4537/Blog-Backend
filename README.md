@@ -1,1 +1,1 @@
-Backend code for blog website projects.
+Backend code for a blog website projects.
